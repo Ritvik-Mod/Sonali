@@ -1,0 +1,795 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Sections below hero — LIQUID GLASS edition.
+   Everything floats on the continuous frosted glass layer.
+   No section backgrounds. No card chrome. Just typography, spacing,
+   and very subtle dividers where structurally needed.
+   ────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --page-bg: #120504;
+  --ink: #f4e9d8;
+  --ink-2: #d9c8ad;
+  --ink-3: #a39580;
+  --rule: rgba(244,233,216,0.07);
+  --rule-strong: rgba(244,233,216,0.14);
+  --saffron: #f5a623;
+  --butter: #e8843a;
+  --chili: #c0392b;
+  --pad-x: clamp(28px, 6vw, 96px);
+  /* glass plate tint used by image placeholders / panels */
+  --glass-plate: rgba(20, 7, 5, 0.32);
+  --glass-plate-2: rgba(244, 233, 216, 0.04);
+}
+
+/* anchor scrolling is handled by JS (custom-duration ease-in-out) */
+/* the body's overflow:hidden must be lifted once we have scroll content */
+html, body{ overflow: visible !important; }
+body{ background: var(--page-bg); }
+
+/* hero is a 100vh container; the fixed video + glass sit behind it */
+.hero{
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  z-index: 6;
+  pointer-events: none;
+}
+.hero > *{ pointer-events: auto; }
+
+/* the video keeps playing forever — only the cursor-glow fades past the hero */
+.video-bed{ opacity: 1; }
+
+/* ─── sticky top nav ──────────────────────────────────────────────── */
+.site-nav{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 32px;
+  padding: 18px var(--pad-x);
+  color: var(--ink);
+  background: transparent;
+  transition: background 320ms ease, backdrop-filter 320ms ease, border-color 320ms ease;
+  border-bottom: 1px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+.site-nav.show{
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  background: rgba(18,5,4,0.55);
+  backdrop-filter: blur(20px) saturate(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(1.05);
+  border-bottom-color: var(--rule);
+}
+.site-nav .brand{
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  isolation: isolate;
+  padding: 6px 10px;
+  margin: -6px -10px;
+}
+.site-nav .brand::before,
+.site-nav .links a::before{
+  content: "";
+  position: absolute;
+  inset: -6px -16px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at center, rgba(245,166,35,0.10), transparent 68%);
+  filter: blur(8px);
+  z-index: -1;
+  opacity: 0.55;
+  transition: opacity 240ms ease;
+  pointer-events: none;
+}
+.site-nav .brand:hover::before,
+.site-nav .links a:hover::before{ opacity: 1; }
+.site-nav .brand .logo{
+  width: 38px; height: 38px;
+  background: url('assets/sonali-logo.png') center/contain no-repeat;
+}
+.site-nav .brand .wm{
+  display: flex; flex-direction: column; line-height: 1;
+}
+.site-nav .brand .wm-1{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.site-nav .brand .wm-2{
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: 16px;
+  color: var(--ink);
+  margin-top: 4px;
+}
+.site-nav .links{
+  display: flex; gap: 32px; justify-content: center;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+}
+.site-nav .links a{
+  color: var(--ink-2); text-decoration: none; transition: color 200ms;
+  position: relative;
+  isolation: isolate;
+  padding: 6px 4px;
+}
+.site-nav .links a:hover{ color: var(--saffron); }
+.site-nav .cta{
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  padding: 10px 18px;
+  border: 1px solid rgba(244,233,216,0.20);
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+  background: rgba(20,7,5,0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 200ms, border-color 200ms, color 200ms;
+}
+.site-nav .cta:hover{
+  background: var(--saffron);
+  border-color: var(--saffron);
+  color: #1a0806;
+}
+@media (max-width: 880px){
+  .site-nav .links{ display: none; }
+}
+
+/* ─── cursor ──────────────────────────────────────────────────────── */
+.cursor{ display: none; }
+
+/* ─── content scroller ────────────────────────────────────────────── */
+.content{
+  position: relative;
+  z-index: 7;
+  background: transparent; /* glass + video visible behind everything */
+  color: var(--ink);
+  font-family: 'Geist', system-ui, sans-serif;
+}
+.section{
+  padding: clamp(80px, 12vw, 160px) var(--pad-x);
+  position: relative;
+  background: transparent;
+}
+.section.alt, .section.alt-2{ background: transparent; }
+
+/* ─── shared primitives ───────────────────────────────────────────── */
+.eyebrow{
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.eyebrow::before{
+  content: ""; width: 24px; height: 1px; background: currentColor; opacity: 0.6;
+}
+
+.h1{
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(40px, 5.6vw, 84px);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 22px 0 0;
+  text-wrap: pretty;
+}
+.h1 em{
+  font-style: italic;
+  background: linear-gradient(180deg, #f5b94a 0%, #e8843a 60%, #c66220 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.body-lg{
+  font-family: 'Geist', sans-serif;
+  font-size: 17px; line-height: 1.7;
+  color: var(--ink-2);
+  font-weight: 300;
+  text-wrap: pretty;
+}
+
+/* default btn used by section CTAs — glass pill */
+.btn{
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 14px 22px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+  border-radius: 999px;
+  border: 1px solid rgba(244,233,216,0.18);
+  color: var(--ink);
+  background: rgba(20,7,5,0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-decoration: none;
+  transition: background 200ms, border-color 200ms, color 200ms, transform 200ms;
+}
+.btn:hover{
+  background: rgba(245,166,35,0.85);
+  border-color: rgba(245,166,35,1);
+  color: #1a0806;
+  transform: translateY(-1px);
+}
+.btn.primary{
+  background: rgba(245,166,35,0.92);
+  border-color: rgba(245,166,35,1);
+  color: #1a0806;
+}
+.btn.primary:hover{ background: rgba(232,132,58,0.95); color: #1a0806; }
+.btn .arrow{ transition: transform 200ms; }
+.btn:hover .arrow{ transform: translateX(4px); }
+
+/* glass plate — used wherever we need a faint frosted card
+   (image placeholders, instagram cells). Very subtle. */
+.glass-plate{
+  background: var(--glass-plate);
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  border: 1px solid rgba(244,233,216,0.08);
+}
+
+/* ─── section 1 · legacy strip ────────────────────────────────────── */
+.legacy{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  padding: 32px var(--pad-x);
+  position: relative;
+}
+.legacy .stat{
+  text-align: center;
+  padding: 0 24px;
+  position: relative;
+}
+.legacy .stat + .stat::before{
+  content: "";
+  position: absolute; left: 0; top: 20%; bottom: 20%;
+  width: 1px; background: var(--rule);
+}
+.legacy .num{
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(56px, 7.5vw, 108px);
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.legacy .num em{
+  color: var(--saffron);
+  font-style: italic;
+}
+.legacy .lbl{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 14px;
+}
+.legacy-tag{
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(20px, 2vw, 28px);
+  color: var(--ink-2);
+  margin-top: 56px;
+  padding: 0 var(--pad-x);
+  font-weight: 400;
+}
+@media (max-width: 720px){
+  .legacy{ grid-template-columns: 1fr; gap: 24px; }
+  .legacy .stat + .stat::before{ display: none; }
+}
+
+/* ─── section 2 · the story ───────────────────────────────────────── */
+.story{
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: clamp(40px, 6vw, 96px);
+  align-items: center;
+}
+.story-copy .h1{ max-width: 16ch; }
+.story-copy .body-lg{ margin-top: 32px; max-width: 56ch; }
+.story-copy .sig{
+  margin-top: 28px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--ink);
+}
+.story-copy .sig em{ color: var(--saffron); font-style: italic; }
+/* image placeholder = subtle glass plate with arched top */
+.story-image{
+  aspect-ratio: 4 / 5;
+  border-radius: 999px 999px 16px 16px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(244,233,216,0.05) 0 8px,
+      rgba(244,233,216,0.02) 8px 16px
+    ),
+    var(--glass-plate);
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  border: 1px solid rgba(244,233,216,0.08);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 28px;
+  position: relative;
+}
+.story-image .ph{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+}
+@media (max-width: 880px){
+  .story{ grid-template-columns: 1fr; }
+}
+
+/* ─── section 3 · menu ────────────────────────────────────────────── */
+.menu-head{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 24px;
+  margin-bottom: 56px;
+}
+.menu-head .h1{ max-width: 14ch; }
+.menu-tabs{
+  display: flex; gap: 6px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 48px;
+}
+.menu-tab{
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--ink-3);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 18px 22px;
+  border-bottom: 1px solid transparent;
+  margin-bottom: -1px;
+  transition: color 200ms, border-color 200ms;
+}
+.menu-tab:hover{ color: var(--ink); }
+.menu-tab.active{
+  color: var(--saffron);
+  border-bottom-color: var(--saffron);
+}
+.menu-panel{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 64px;
+}
+.menu-panel[hidden]{ display: none; }
+.dish{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  padding: 24px 0;
+  align-items: baseline;
+  position: relative;
+}
+.dish + .dish::before,
+.menu-panel .dish:nth-child(n+3)::before{
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px; background: var(--rule);
+}
+.dish .name{
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.dish .desc{
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: var(--ink-3);
+  font-weight: 300;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.dish .tag{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+  padding-top: 6px;
+}
+.dish .tag.og{ color: var(--saffron); }
+.dish .tag.fusion{ color: var(--butter); }
+.menu-foot{
+  margin-top: 56px;
+  display: flex; justify-content: flex-end;
+}
+@media (max-width: 720px){
+  .menu-panel{ grid-template-columns: 1fr; gap: 0; }
+  .menu-head{ grid-template-columns: 1fr; }
+}
+
+/* ─── section 4 · signature showcase ─────────────────────────────── */
+.showcase-head{ text-align: center; }
+.showcase-head .h1{ margin-top: 22px; max-width: 18ch; margin-inline: auto; }
+.showcase-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 2.4vw, 36px);
+  margin-top: 88px;
+}
+.showcase-card{
+  display: flex; flex-direction: column;
+  background: transparent;
+}
+.showcase-card .img{
+  aspect-ratio: 4 / 5;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(244,233,216,0.045) 0 6px,
+      rgba(244,233,216,0.015) 6px 12px
+    ),
+    var(--glass-plate);
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  border: 1px solid rgba(244,233,216,0.08);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.showcase-card.featured .img{ aspect-ratio: 4 / 5.4; }
+.showcase-card .img .ph{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.showcase-card .meta{
+  margin-top: 22px;
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px;
+}
+.showcase-card .meta .num{
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--ink-3);
+}
+.showcase-card .meta .badge{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--saffron);
+}
+.showcase-card .title{
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 2.6vw, 36px);
+  line-height: 1.15;
+  margin-top: 6px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.showcase-card .desc{
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  margin-top: 14px;
+  font-weight: 300;
+}
+@media (max-width: 880px){
+  .showcase-grid{ grid-template-columns: 1fr; }
+}
+
+/* ─── section 5 · reviews ─────────────────────────────────────────── */
+.reviews-head{
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: end; gap: 32px;
+  margin-bottom: 64px;
+}
+.reviews-head .h1{ max-width: 14ch; }
+.reviews-grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 56px 80px;
+}
+.review{
+  padding: 0;
+  background: transparent;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.review .quote-mark{
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 64px; line-height: 0.5;
+  color: var(--saffron);
+  font-style: italic;
+}
+.review .quote{
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.3;
+  color: var(--ink);
+  flex: 1;
+  font-weight: 400;
+}
+.review .src{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ratings{
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  margin-top: 80px;
+  gap: 0;
+  padding-top: 32px;
+  position: relative;
+}
+.ratings::before{
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px; background: var(--rule);
+}
+.rating{
+  padding: 8px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: relative;
+}
+.rating + .rating::before{
+  content: "";
+  position: absolute; left: 0; top: 25%; bottom: 25%;
+  width: 1px; background: var(--rule);
+}
+.rating .score{
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.rating .score em{ color: var(--saffron); font-style: normal; font-size: 28px; }
+.rating .src{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+@media (max-width: 880px){
+  .reviews-grid{ grid-template-columns: 1fr; }
+  .ratings{ grid-template-columns: repeat(2, 1fr); gap: 24px 0; }
+  .rating + .rating:nth-child(2)::before{ display: none; }
+}
+
+/* ─── section 6 · visit ───────────────────────────────────────────── */
+.visit-head{ text-align: center; margin-bottom: 72px; }
+.visit-head .h1{ margin-top: 22px; }
+.visit-grid{
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px;
+}
+.outlet{
+  padding: 0;
+  background: transparent;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+.outlet .pill{
+  align-self: flex-start;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--ink-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  padding: 6px 12px;
+  margin-bottom: 24px;
+}
+.outlet .pill.flagship{ color: var(--saffron); border-color: var(--saffron); }
+.outlet .name{
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(32px, 3.4vw, 48px);
+  line-height: 1.1;
+  margin-bottom: 32px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.outlet .name em{
+  font-style: italic;
+  color: var(--saffron);
+  font-size: 0.5em;
+  display: block;
+  margin-top: 6px;
+  letter-spacing: 0.08em;
+}
+.outlet .row{
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.outlet .row .k{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--ink-3);
+  padding-top: 2px;
+}
+.outlet .row .v{
+  font-family: 'Geist', sans-serif;
+  color: var(--ink-2);
+  font-weight: 300;
+}
+.outlet .actions{
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-top: 36px;
+}
+@media (max-width: 880px){
+  .visit-grid{ grid-template-columns: 1fr; gap: 56px; }
+}
+
+/* ─── section 7 · instagram ───────────────────────────────────────── */
+.gram-head{
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: end; gap: 32px;
+  margin-bottom: 56px;
+}
+.gram-head .h1{ max-width: 14ch; }
+.gram-grid{
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+.gram-cell{
+  aspect-ratio: 1;
+  background:
+    repeating-linear-gradient(
+      var(--ang, 45deg),
+      rgba(244,233,216,0.045) 0 6px,
+      rgba(244,233,216,0.015) 6px 12px
+    ),
+    var(--glass-plate);
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  border: 1px solid rgba(244,233,216,0.08);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.gram-cell::before{
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--gx, 40%) var(--gy, 30%), rgba(232,132,58,0.16), transparent 60%);
+}
+.gram-cell .lbl{
+  position: absolute; left: 12px; bottom: 10px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+@media (max-width: 880px){ .gram-grid{ grid-template-columns: repeat(3, 1fr); } }
+
+/* ─── footer ──────────────────────────────────────────────────────── */
+footer.foot{
+  background: transparent;
+  padding: 88px var(--pad-x) 36px;
+  color: var(--ink);
+  position: relative;
+  z-index: 7;
+}
+footer.foot::before{
+  content: "";
+  position: absolute; top: 0; left: var(--pad-x); right: var(--pad-x);
+  height: 1px; background: var(--rule);
+}
+.foot-grid{
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr;
+  gap: clamp(32px, 5vw, 80px);
+  padding-bottom: 56px;
+}
+.foot-brand .logo-row{
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 22px;
+}
+.foot-brand .logo{
+  width: 64px; height: 64px;
+  background: url('assets/sonali-logo.png') center/contain no-repeat;
+}
+.foot-brand .name{
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+}
+.foot-brand .name em{ color: var(--saffron); font-style: italic; }
+.foot-brand .tag{
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  color: var(--ink-2);
+  font-weight: 300;
+  max-width: 36ch;
+  line-height: 1.6;
+}
+.foot-brand .socials{
+  margin-top: 28px;
+  display: flex; gap: 14px;
+}
+.foot-brand .socials a{
+  width: 38px; height: 38px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--ink-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  background: rgba(20,7,5,0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 200ms, border-color 200ms, color 200ms;
+}
+.foot-brand .socials a:hover{
+  background: var(--saffron);
+  border-color: var(--saffron);
+  color: #1a0806;
+}
+.foot-col h4{
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+.foot-col ul{ list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.foot-col a{
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-weight: 300;
+  transition: color 200ms;
+}
+.foot-col a:hover{ color: var(--saffron); }
+.foot-contact .line{
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  color: var(--ink-2);
+  font-weight: 300;
+  line-height: 1.7;
+}
+.foot-contact .line strong{
+  color: var(--ink);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 2px;
+}
+.foot-bottom{
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 28px;
+  margin-top: 28px;
+  border-top: 1px solid var(--rule);
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.foot-bottom em{ color: var(--saffron); font-style: normal; }
+@media (max-width: 880px){
+  .foot-grid{ grid-template-columns: 1fr; }
+  .foot-bottom{ flex-direction: column; gap: 14px; text-align: center; }
+}
