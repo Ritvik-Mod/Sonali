@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sonali — The Food Lane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="sections.css" />
+
+<style>
+  :root{
+    /* tweakable defaults are mirrored in the EDITMODE JSON below */
+    --bg: #1a0806;           /* oxblood / cast-iron */
+    --bg-2: #2b0d09;
+    --ink: #f4e9d8;          /* warm bone */
+    --accent: #e8843a;       /* butter-saffron */
+    --accent-2: #c0392b;     /* chili red */
+    --reveal-w: 460px;
+    --reveal-h: 600px;
+    --edge: 28;
+    --hero-fade: 1;
+    --mx: 50vw;
+    --my: 50vh;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html, body{ height:100%; }
+  body{
+    font-family: 'Geist', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  /* fullscreen video sits at the back */
+  .video-bed{
+    position: fixed; inset: 0;
+    width:100%; height:100%;
+    object-fit: cover;
+    z-index: 1;
+    /* slight saturation pump so the video pops when revealed */
+    filter: saturate(1.1) contrast(1.05);
+  }
+
+  /* ─── LIQUID GLASS ─── full-viewport frosted layer over the looping video.
+     The cursor punches a soft hole in it during the hero so the video shows clearly;
+     past the hero (--hero-fade → 0) the hole shrinks to zero and the glass is uniform. */
+  .glass-bg{
+    position: fixed; inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(20,7,5,0.36) 0%, rgba(15,5,4,0.56) 100%);
+    backdrop-filter: blur(var(--glass-blur, 26px)) saturate(0.92) brightness(var(--glass-brightness, 0.78));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 26px)) saturate(0.92) brightness(var(--glass-brightness, 0.78));
+    -webkit-mask-image: radial-gradient(
+      ellipse calc(var(--reveal-w) * var(--hero-fade, 0)) calc(var(--reveal-h) * var(--hero-fade, 0)) at var(--mx) var(--my),
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) calc((100% - var(--edge) * 1%) - 30%),
+      rgba(0,0,0,0.55) calc(100% - var(--edge) * 1%),
+      rgba(0,0,0,1) 100%
+    );
+            mask-image: radial-gradient(
+      ellipse calc(var(--reveal-w) * var(--hero-fade, 0)) calc(var(--reveal-h) * var(--hero-fade, 0)) at var(--mx) var(--my),
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) calc((100% - var(--edge) * 1%) - 30%),
+      rgba(0,0,0,0.55) calc(100% - var(--edge) * 1%),
+      rgba(0,0,0,1) 100%
+    );
+    isolation: isolate;
+  }
+  /* highlight gleam along the top edge — liquid-glass signature */
+  .glass-bg::before{
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent 0%, rgba(244,233,216,0.18) 50%, transparent 100%);
+    pointer-events: none;
+  }
+  /* extremely subtle inner sheen */
+  .glass-bg::after{
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(80% 50% at 20% 0%, rgba(245,166,35,0.06), transparent 60%),
+      radial-gradient(80% 50% at 80% 100%, rgba(192,57,43,0.05), transparent 60%);
+    pointer-events: none;
+  }
+  /* dark-mode tandoor variant tints the glass warmer */
+  body.bg-tandoor .glass-bg{
+    background:
+      linear-gradient(180deg, rgba(40,18,10,0.34) 0%, rgba(20,8,5,0.54) 100%);
+  }
+
+  /* warm cursor-following glow — only visible in hero (fades with --hero-fade) */
+  .cursor-glow{
+    position: fixed;
+    left: var(--mx); top: var(--my);
+    width: 720px; height: 880px;
+    margin-left: -360px; margin-top: -440px;
+    z-index: 3;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at center, rgba(245,166,35,0.18) 0%, rgba(232,132,58,0.08) 35%, transparent 70%);
+    mix-blend-mode: screen;
+    opacity: var(--hero-fade, 1);
+    transition: opacity 240ms linear;
+    filter: blur(6px);
+  }
+
+  /* brand chrome — minimal, sits above everything */
+  .chrome{
+    position: absolute; inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: 32px 44px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    color: var(--ink);
+  }
+  .chrome > *{ pointer-events: auto; }
+
+  /* hero copy block — sits in the center row */
+  .hero-center{
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .hero-copy{
+    max-width: 720px;
+    text-align: center;
+    pointer-events: auto;
+    opacity: var(--hero-fade, 1);
+    transform: translateY(calc((1 - var(--hero-fade, 1)) * 30px));
+    transition: opacity 240ms linear, transform 240ms linear;
+  }
+  .hero-eyebrow{
+    display: inline-block;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(244,233,216,0.6);
+    padding: 8px 16px;
+    border: 1px solid rgba(244,233,216,0.14);
+    border-radius: 999px;
+    background: rgba(20,7,5,0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    margin-bottom: 36px;
+  }
+  .hero-title{
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: clamp(46px, 6.8vw, 104px);
+    line-height: 1.02;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+  .hero-title em{
+    font-style: italic;
+    background: linear-gradient(180deg, #f5b94a 0%, #e8843a 60%, #c66220 100%);
+    -webkit-background-clip: text;
+            background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-sub{
+    margin-top: 28px;
+    font-family: 'Geist', sans-serif;
+    font-size: clamp(15px, 1.2vw, 18px);
+    line-height: 1.55;
+    color: rgba(244,233,216,0.78);
+    font-weight: 300;
+    max-width: 52ch;
+    margin-left: auto; margin-right: auto;
+  }
+  .hero-cta{
+    margin-top: 44px;
+    display: flex; gap: 12px;
+    justify-content: center; flex-wrap: wrap;
+  }
+  .hero-cta .btn{
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 14px 24px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+    border-radius: 999px;
+    border: 1px solid rgba(244,233,216,0.18);
+    background: rgba(20,7,5,0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 220ms, border-color 220ms, color 220ms, transform 220ms;
+  }
+  .hero-cta .btn.primary{
+    background: rgba(245,166,35,0.92);
+    border-color: rgba(245,166,35,1);
+    color: #1a0806;
+  }
+  .hero-cta .btn:hover{
+    background: rgba(245,166,35,0.85);
+    border-color: rgba(245,166,35,1);
+    color: #1a0806;
+    transform: translateY(-1px);
+  }
+  .hero-cta .arrow{ display: inline-block; transition: transform 200ms; }
+  .hero-cta .btn:hover .arrow{ transform: translateX(4px); }
+
+  .top{
+    display:flex; align-items:center; justify-content: space-between;
+  }
+  .mark{
+    display:flex; align-items:center; gap:14px;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .mark .logo{
+    width: 56px; height: 56px;
+    background: url('assets/sonali-logo.png') center/contain no-repeat;
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,0.4));
+  }
+  .mark .wm{
+    display: flex; flex-direction: column; gap: 2px;
+    line-height: 1;
+  }
+  .mark .wm-1{
+    font-size: 11px;
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    opacity: 0.55;
+  }
+  .mark .wm-2{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 18px;
+    opacity: 0.8;
+  }
+
+  .meta{
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.55;
+  }
+
+  .nav{
+    display:flex; gap: 28px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+  .nav a{ color: inherit; text-decoration: none; }
+  .nav a:hover{ color: var(--accent); }
+
+  .bottom{
+    display:flex; align-items:flex-end; justify-content: space-between;
+    gap: 32px;
+  }
+
+  .hint{
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    display:flex; align-items:center; gap: 10px;
+  }
+  .hint .dot{
+    width: 6px; height: 6px; border-radius:50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+    animation: pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%, 100%{ opacity: 0.5; transform: scale(1); }
+    50%{ opacity: 1; transform: scale(1.4); }
+  }
+
+  .corner{
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    opacity: 0.45;
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  /* hide chrome on small viewports to keep reveal pure */
+  @media (max-width: 720px){
+    .chrome{ padding: 20px 22px; }
+    .nav{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+  <video class="video-bed" id="videoBed" autoplay muted loop playsinline preload="auto"></video>
+
+  <!-- liquid glass — fixed full-viewport frosted layer over the video -->
+  <div class="glass-bg" id="glassBg"></div>
+  <!-- warm cursor-following glow, only visible in hero -->
+  <div class="cursor-glow" id="cursorGlow"></div>
+
+  <!-- sticky top nav appears once user scrolls past hero -->
+  <header class="site-nav" id="siteNav">
+    <a class="brand" href="#top">
+      <span class="logo"></span>
+      <span class="wm">
+        <span class="wm-1">Sonali</span>
+        <span class="wm-2">The Food Lane</span>
+      </span>
+    </a>
+    <nav class="links">
+      <a href="#story">Story</a>
+      <a href="#menu">Menu</a>
+      <a href="#showcase">Signatures</a>
+      <a href="#reviews">Reviews</a>
+      <a href="#visit">Visit</a>
+    </nav>
+    <a class="cta" href="https://www.zomato.com" target="_blank" rel="noopener">Order on Zomato</a>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="chrome">
+      <header class="top">
+        <div class="mark">
+          <span class="logo"></span>
+          <span class="wm">
+            <span class="wm-1">Sonali</span>
+            <span class="wm-2">The Food Lane</span>
+          </span>
+        </div>
+        <nav class="nav">
+          <a href="#menu">Menu</a>
+          <a href="#story">Story</a>
+          <a href="#visit">Visit</a>
+        </nav>
+        <div class="meta">Est. Rajkot · 1968</div>
+      </header>
+
+      <div class="hero-center">
+        <div class="hero-copy">
+          <span class="hero-eyebrow">Since 1968 · Rajkot</span>
+          <h1 class="hero-title">
+            The first<br/>
+            <em>butter pav bhaji</em><br/>
+            in Rajkot.
+          </h1>
+          <p class="hero-sub">
+            Pioneers of pav bhaji in Gujarat — and the whole Food Lane that came after.
+          </p>
+          <div class="hero-cta">
+            <a class="btn primary" href="https://www.zomato.com" target="_blank" rel="noopener">
+              Order on Zomato <span class="arrow">→</span>
+            </a>
+            <a class="btn" href="#menu">See the menu</a>
+          </div>
+        </div>
+      </div>
+
+      <footer class="bottom">
+        <div></div>
+        <div class="corner">
+          Open daily · 11.00 — 23.00<br/>
+          Race Course Road · Rajkot
+        </div>
+      </footer>
+    </div>
+  </section>
+
+  <main class="content">
+
+    <!-- ── Section 1 · Legacy strip ───────────────────────────────────── -->
+    <section class="section" id="legacy">
+      <div class="legacy">
+        <div class="stat">
+          <div class="num">1968</div>
+          <div class="lbl">Year Founded</div>
+        </div>
+        <div class="stat">
+          <div class="num">57<em>+</em></div>
+          <div class="lbl">Years of Legacy</div>
+        </div>
+        <div class="stat">
+          <div class="num">2</div>
+          <div class="lbl">Outlets in Rajkot</div>
+        </div>
+      </div>
+      <p class="legacy-tag">From a small Rajkot kitchen in 1968 to Gujarat's most iconic pav bhaji name.</p>
+    </section>
+
+    <!-- ── Section 2 · The Story ──────────────────────────────────────── -->
+    <section class="section alt" id="story">
+      <div class="story">
+        <div class="story-copy">
+          <span class="eyebrow">Our Story</span>
+          <h2 class="h1">The pioneers of <em>pav bhaji</em> in Gujarat.</h2>
+          <p class="body-lg">
+            It started in 1968 with one obsession — getting Bombay-style pav bhaji right for the people of Rajkot. Decades later, we're still doing it. The same butter-soaked pav. The same secret masala. But now, with a fusion twist — Black Bhaji, Green Bhaji, Cheese Basket Pulav, and a whole Food Lane full of surprises.
+          </p>
+          <p class="sig">Old soul. New tricks. <em>Always Sonali.</em></p>
+        </div>
+        <div class="story-image">
+          <div class="ph">Founder portrait · 1968 archival</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 3 · The Menu / Food Lane ───────────────────────────── -->
+    <section class="section" id="menu">
+      <div class="menu-head">
+        <div>
+          <span class="eyebrow">The Food Lane</span>
+          <h2 class="h1">What we're <em>famous</em> for.</h2>
+        </div>
+      </div>
+
+      <div class="menu-tabs" role="tablist">
+        <button class="menu-tab active" data-tab="og">The OG Classics</button>
+        <button class="menu-tab" data-tab="fusion">The Fusion Lane</button>
+        <button class="menu-tab" data-tab="south">South of Sonali</button>
+        <button class="menu-tab" data-tab="sides">Sides &amp; Sips</button>
+      </div>
+
+      <div class="menu-panel" data-panel="og">
+        <div class="dish">
+          <div>
+            <div class="name">Butter Pav Bhaji</div>
+            <div class="desc">The one that started it all in 1968.</div>
+          </div>
+          <div class="tag og">OG · 1968</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Khada Pav Bhaji</div>
+            <div class="desc">Chunky, rustic, unforgettable.</div>
+          </div>
+          <div class="tag">House</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Bhaji Pulav</div>
+            <div class="desc">Two icons. One plate.</div>
+          </div>
+          <div class="tag">House</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Special Pav Bhaji</div>
+            <div class="desc">Loaded the way the regulars order it.</div>
+          </div>
+          <div class="tag">Regulars' pick</div>
+        </div>
+      </div>
+
+      <div class="menu-panel" data-panel="fusion" hidden>
+        <div class="dish">
+          <div>
+            <div class="name">Black Pav Bhaji</div>
+            <div class="desc">Smoky, bold, charcoal-dark.</div>
+          </div>
+          <div class="tag fusion">Fusion</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Green Pav Bhaji</div>
+            <div class="desc">Fresh herbs, vibrant heat.</div>
+          </div>
+          <div class="tag fusion">Fusion</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Cheese Basket Bhaji Pulav</div>
+            <div class="desc">Tradition in an edible crispy basket.</div>
+          </div>
+          <div class="tag fusion">Signature</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Peri Peri Pav</div>
+            <div class="desc">When Lisbon meets Rajkot.</div>
+          </div>
+          <div class="tag fusion">Fusion</div>
+        </div>
+      </div>
+
+      <div class="menu-panel" data-panel="south" hidden>
+        <div class="dish">
+          <div>
+            <div class="name">Masala Dosa</div>
+            <div class="desc">Crispy, golden, served with our chutneys.</div>
+          </div>
+          <div class="tag">Classic</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Open Dosa</div>
+            <div class="desc">Wide canvas, bold flavors.</div>
+          </div>
+          <div class="tag">House</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Mysore Masala Dosa</div>
+            <div class="desc">Spice-painted, melt-in-mouth.</div>
+          </div>
+          <div class="tag">Classic</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Idli &amp; Uttapam</div>
+            <div class="desc">Soft, fluffy, comforting.</div>
+          </div>
+          <div class="tag">Classic</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Tomato Uttapam</div>
+            <div class="desc">Tangy, soft, a quiet favorite.</div>
+          </div>
+          <div class="tag">Quiet hit</div>
+        </div>
+      </div>
+
+      <div class="menu-panel" data-panel="sides" hidden>
+        <div class="dish">
+          <div>
+            <div class="name">Club Sandwich</div>
+            <div class="desc">Tower of comfort.</div>
+          </div>
+          <div class="tag">Side</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Chole Kulcha</div>
+            <div class="desc">Punjabi soul, Rajkot heart.</div>
+          </div>
+          <div class="tag">House</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Veg / Paneer Pulav</div>
+            <div class="desc">Aromatic, rich, generous.</div>
+          </div>
+          <div class="tag">Main</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Buttermilk</div>
+            <div class="desc">Cool down after the spice.</div>
+          </div>
+          <div class="tag">Sip</div>
+        </div>
+        <div class="dish">
+          <div>
+            <div class="name">Gulab Jamun</div>
+            <div class="desc">Sweet ending, every time.</div>
+          </div>
+          <div class="tag">Sweet</div>
+        </div>
+      </div>
+
+      <div class="menu-foot">
+        <a class="btn" href="https://www.zomato.com" target="_blank" rel="noopener">
+          See full menu on Zomato
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ── Section 4 · Signature Showcase ─────────────────────────────── -->
+    <section class="section alt" id="showcase">
+      <div class="showcase-head">
+        <span class="eyebrow">What we do best</span>
+        <h2 class="h1">Three plates. <em>One Sonali.</em></h2>
+      </div>
+      <div class="showcase-grid">
+        <article class="showcase-card">
+          <div class="img"><div class="ph">Hero shot · Butter Pav Bhaji</div></div>
+          <div class="meta">
+            <span class="num">01 / 03</span>
+            <span class="badge">OG · 1968</span>
+          </div>
+          <h3 class="title">The OG Butter Pav Bhaji</h3>
+          <p class="desc">The one that started it all in 1968. Buttery, bold, and exactly the way Rajkot has loved it for 57 years.</p>
+        </article>
+
+        <article class="showcase-card featured">
+          <div class="img"><div class="ph">Hero shot · Black Pav Bhaji</div></div>
+          <div class="meta">
+            <span class="num">02 / 03</span>
+            <span class="badge">Fusion icon</span>
+          </div>
+          <h3 class="title">Black Pav Bhaji</h3>
+          <p class="desc">Our fusion icon. Charcoal-smoky, intensely spiced, a plate that turns heads.</p>
+        </article>
+
+        <article class="showcase-card">
+          <div class="img"><div class="ph">Hero shot · Cheese Basket Pulav</div></div>
+          <div class="meta">
+            <span class="num">03 / 03</span>
+            <span class="badge">Signature</span>
+          </div>
+          <h3 class="title">Cheese Basket Bhaji Pulav</h3>
+          <p class="desc">Tradition served in a crispy, edible basket. Because the classics deserve a remix.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── Section 5 · Social Proof ───────────────────────────────────── -->
+    <section class="section" id="reviews">
+      <div class="reviews-head">
+        <div>
+          <span class="eyebrow">What Rajkot says</span>
+          <h2 class="h1">Loved for <em>generations.</em></h2>
+        </div>
+      </div>
+
+      <div class="reviews-grid">
+        <div class="review">
+          <div class="quote-mark">“</div>
+          <p class="quote">The only name in Rajkot for pav bhaji. Period.</p>
+          <div class="src">Google Reviews</div>
+        </div>
+        <div class="review">
+          <div class="quote-mark">“</div>
+          <p class="quote">Old and gold. Been eating here for fifteen years, same legendary taste.</p>
+          <div class="src">Tripadvisor</div>
+        </div>
+        <div class="review">
+          <div class="quote-mark">“</div>
+          <p class="quote">Pioneers of pav bhaji in Gujarat. Nobody else comes close.</p>
+          <div class="src">Zomato</div>
+        </div>
+        <div class="review">
+          <div class="quote-mark">“</div>
+          <p class="quote">The Black Pav Bhaji is genius. Tradition meets innovation.</p>
+          <div class="src">Restaurant Guru</div>
+        </div>
+      </div>
+
+      <div class="ratings">
+        <div class="rating">
+          <div class="score">4.2<em> ★</em></div>
+          <div class="src">Google</div>
+        </div>
+        <div class="rating">
+          <div class="score">4.1<em> ★</em></div>
+          <div class="src">Justdial</div>
+        </div>
+        <div class="rating">
+          <div class="score">4.0<em> ★</em></div>
+          <div class="src">Restaurant Guru</div>
+        </div>
+        <div class="rating">
+          <div class="score">3.7<em> ★</em></div>
+          <div class="src">Tripadvisor</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 6 · Visit Us ───────────────────────────────────────── -->
+    <section class="section alt" id="visit">
+      <div class="visit-head">
+        <span class="eyebrow">Visit Us</span>
+        <h2 class="h1">Two doors. <em>Same Sonali.</em></h2>
+      </div>
+      <div class="visit-grid">
+        <article class="outlet">
+          <span class="pill flagship">Flagship · Since 1968</span>
+          <h3 class="name">Race Course Road<em>The original</em></h3>
+          <div class="row"><span class="k">Address</span><span class="v">Vitthal Apartment, Race Course Road, near Maganlal Ice Cream, Rajkot — 360001</span></div>
+          <div class="row"><span class="k">Hours</span><span class="v">11.00 AM – 11.00 PM, daily</span></div>
+          <div class="row"><span class="k">Phone</span><span class="v">+91 281 2459907</span></div>
+          <div class="actions">
+            <a class="btn primary" href="https://maps.google.com" target="_blank" rel="noopener">Get directions <span class="arrow">→</span></a>
+            <a class="btn" href="https://www.zomato.com" target="_blank" rel="noopener">Order on Zomato</a>
+          </div>
+        </article>
+
+        <article class="outlet">
+          <span class="pill">The Food Lane</span>
+          <h3 class="name">Kotecha Nagar<em>The newer chapter</em></h3>
+          <div class="row"><span class="k">Address</span><span class="v">Nirmala Road, near SVC Bank, opposite Sprinkles Cafesserie, Rajkot — 360007</span></div>
+          <div class="row"><span class="k">Hours</span><span class="v">11.00 AM – 11.00 PM, daily</span></div>
+          <div class="row"><span class="k">Phone</span><span class="v">+91 93770 03690</span></div>
+          <div class="actions">
+            <a class="btn primary" href="https://maps.google.com" target="_blank" rel="noopener">Get directions <span class="arrow">→</span></a>
+            <a class="btn" href="https://www.zomato.com" target="_blank" rel="noopener">Order on Zomato</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── Section 7 · Instagram ──────────────────────────────────────── -->
+    <section class="section" id="gram">
+      <div class="gram-head">
+        <div>
+          <span class="eyebrow">@sonali_thefoodlane</span>
+          <h2 class="h1">Catch us on <em>the gram.</em></h2>
+        </div>
+        <a class="btn" href="https://www.instagram.com/sonali_thefoodlane?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener">Follow · 18K <span class="arrow">→</span></a>
+      </div>
+      <div class="gram-grid">
+        <div class="gram-cell" style="--ang:25deg; --gx:30%; --gy:30%"><span class="lbl">Post 01</span></div>
+        <div class="gram-cell" style="--ang:65deg; --gx:70%; --gy:20%"><span class="lbl">Post 02</span></div>
+        <div class="gram-cell" style="--ang:115deg; --gx:40%; --gy:60%"><span class="lbl">Post 03</span></div>
+        <div class="gram-cell" style="--ang:155deg; --gx:60%; --gy:50%"><span class="lbl">Post 04</span></div>
+        <div class="gram-cell" style="--ang:35deg; --gx:20%; --gy:70%"><span class="lbl">Post 05</span></div>
+        <div class="gram-cell" style="--ang:85deg; --gx:80%; --gy:75%"><span class="lbl">Post 06</span></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Section 8 · Footer ───────────────────────────────────────────── -->
+  <footer class="foot">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="logo-row">
+          <div class="logo"></div>
+          <div>
+            <div class="name">Sonali <em>— The Food Lane</em></div>
+          </div>
+        </div>
+        <p class="tag">Rajkot's OG Pav Bhaji. Since 1968. Old soul, new tricks — always Sonali.</p>
+        <div class="socials">
+          <a href="https://www.instagram.com/sonali_thefoodlane?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.9" fill="currentColor"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="foot-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#top">Home</a></li>
+          <li><a href="#story">Story</a></li>
+          <li><a href="#menu">Menu</a></li>
+          <li><a href="#visit">Visit</a></li>
+          <li><a href="https://www.zomato.com" target="_blank" rel="noopener">Order Online</a></li>
+        </ul>
+      </div>
+
+      <div class="foot-col foot-contact">
+        <h4>Visit · Call</h4>
+        <p class="line"><strong>Race Course Road</strong>+91 281 2459907</p>
+        <p class="line" style="margin-top: 14px;"><strong>Kotecha Nagar</strong>+91 93770 03690</p>
+        <p class="line" style="margin-top: 14px;"><strong>Hours</strong>Open daily · 11.00 AM – 11.00 PM</p>
+      </div>
+    </div>
+
+    <div class="foot-bottom">
+      <div>© 2026 Sonali Restaurant</div>
+      <div>Made with <em>butter</em> in Rajkot.</div>
+    </div>
+  </footer>
+
+  <!-- React + Babel for tweaks panel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script>
+    // ---- video: blob-load so preview server's range handling doesn't choke ----
+    (async () => {
+      const v = document.getElementById('videoBed');
+      try {
+        const res = await fetch('assets/hero-loop.mp4');
+        const blob = await res.blob();
+        v.src = URL.createObjectURL(blob);
+        v.load();
+        v.play().catch(()=>{});
+      } catch(e){ console.warn('video load failed', e); }
+    })();
+
+    // ---- cursor reveal ----
+    const root = document.documentElement;
+    let tx = window.innerWidth / 2;
+    let ty = window.innerHeight / 2;
+    let cx = tx, cy = ty;
+
+    function setVars(x, y){
+      root.style.setProperty('--mx', x + 'px');
+      root.style.setProperty('--my', y + 'px');
+    }
+
+    window.addEventListener('pointermove', (e) => {
+      const x = e.clientX, y = e.clientY;
+      const delay = window.__cursorDelay ?? 90;
+      if (delay <= 0){ tx = x; ty = y; return; }
+      setTimeout(() => { tx = x; ty = y; }, delay);
+    }, { passive: true });
+
+    // gentle easing so the reveal trails the cursor a hair — feels premium
+    function raf(){
+      const e = window.__easeAmt || 0.18;
+      cx += (tx - cx) * e;
+      cy += (ty - cy) * e;
+      setVars(cx, cy);
+      requestAnimationFrame(raf);
+    }
+    setVars(cx, cy);
+    requestAnimationFrame(raf);
+
+    // tap on touch devices keeps it usable
+    window.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      if (t){ tx = t.clientX; ty = t.clientY; }
+    }, { passive: true });
+
+    // ---- hero scroll fade + sticky nav + video speed ----
+    const siteNav = document.getElementById('siteNav');
+    const videoEl = document.getElementById('videoBed');
+    let lastSpeed = 1;
+    function onScroll(){
+      const s = window.scrollY;
+      const h = window.innerHeight;
+      // fade hero copy / cursor glow from full at 0 → 0 at 70% of viewport
+      const fadeEnd = h * 0.7;
+      const fade = Math.max(0, 1 - s / fadeEnd);
+      root.style.setProperty('--hero-fade', fade.toFixed(3));
+      // past-hero class
+      const past = s > h * 0.5;
+      document.body.classList.toggle('past-hero', past);
+      siteNav.classList.toggle('show', s > h * 0.55);
+      // slow video down past hero for a calmer scroll
+      const targetSpeed = past ? 0.5 : 1;
+      if (videoEl && targetSpeed !== lastSpeed){
+        try { videoEl.playbackRate = targetSpeed; } catch(e){}
+        lastSpeed = targetSpeed;
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // ---- smooth anchor scroll (tweakable duration, easeInOut) ----
+    function smoothScrollTo(targetY, duration){
+      const startY = window.scrollY;
+      const dist = targetY - startY;
+      if (Math.abs(dist) < 2) return;
+      const dur = Math.max(80, duration || 1400);
+      const startT = performance.now();
+      // easeInOutCubic
+      const ease = (t) => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+      function step(now){
+        const t = Math.min(1, (now - startT) / dur);
+        const e = ease(t);
+        window.scrollTo(0, startY + dist * e);
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('a[href^="#"]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (!href || href === '#') return;
+      const id = href.slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      const offset = el.offsetTop;
+      smoothScrollTo(offset, window.__scrollDuration);
+      // update hash without jumping
+      if (history.replaceState) history.replaceState(null, '', href);
+    });
+
+    // ---- menu tabs ----
+    const tabs = document.querySelectorAll('.menu-tab');
+    const panels = document.querySelectorAll('.menu-panel');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const key = tab.dataset.tab;
+        tabs.forEach(t => t.classList.toggle('active', t === tab));
+        panels.forEach(p => {
+          if (p.dataset.panel === key) p.removeAttribute('hidden');
+          else p.setAttribute('hidden', '');
+        });
+      });
+    });
+
+    // ---- editmode defaults (rewritten by host on tweak persist) ----
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "bgStyle": "oxblood",
+      "accent": "#b8451f",
+      "glassBlur": 15,
+      "glassBrightness": 0.84,
+      "revealW": 720,
+      "revealH": 900,
+      "edge": 33,
+      "ease": 0.7,
+      "cursorDelay": 60,
+      "scrollDuration": 1400
+    }/*EDITMODE-END*/;
+    window.__TWEAK_DEFAULTS = TWEAK_DEFAULTS;
+
+    // apply defaults immediately so first paint matches persisted state
+    (function applyDefaults(d){
+      document.body.classList.remove('bg-oxblood','bg-tandoor');
+      document.body.classList.add('bg-' + d.bgStyle);
+      root.style.setProperty('--accent', d.accent);
+      root.style.setProperty('--glass-blur', d.glassBlur + 'px');
+      root.style.setProperty('--glass-brightness', d.glassBrightness);
+      root.style.setProperty('--reveal-w', d.revealW + 'px');
+      root.style.setProperty('--reveal-h', d.revealH + 'px');
+      root.style.setProperty('--edge', d.edge);
+      window.__easeAmt = d.ease;
+      window.__cursorDelay = d.cursorDelay;
+      window.__scrollDuration = d.scrollDuration;
+    })(TWEAK_DEFAULTS);
+  </script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="tweaks.jsx"></script>
+</body>
+</html>
